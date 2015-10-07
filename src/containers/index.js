@@ -1,22 +1,35 @@
 var blessed = require('blessed');
 var createElement = require('./element')
 var containersResource = require('./resource');
+var blessed = require('blessed');
 
-module.exports = function containersListController (bus) {
+module.exports = function containersListController (context) {
 	return containersResource.query().then(initializeListView);
 
 	function initializeListView (containers) {
+		var containersCommands = {
+			'kill': { keys: ['d'], callback: createEventTrigger('kill container') },
+			'stop': { keys: ['s'], callback: createEventTrigger('stop container') },
+			'restart': { keys: ['r'], callback: createEventTrigger('restart container') },
+			'full commands list': { keys: ['?'], callback: createEventTrigger('additional commands') }
+		};
+
 		var listView = createElement();
 
 		listView.setItems(containers.map(getContainerName));
-		listView.key(['d'], killContainer);
 
-		function killContainer () {
-			var containerIndex = this.selected;
-			bus.emit('kill container', containers[containerIndex]);
+		return [listView, containersCommands];
+
+		function createEventTrigger (name) {
+			return function triggerEvent () {
+				context.askConfirmation(name + '?').then(function actuallyTrigger (ok) {
+					if (ok) {
+						var containerIndex = listView.selected;
+						context.bus.emit(name, containers[containerIndex]);
+					}
+				});
+			}
 		}
-
-		return listView;
 	}
 };
 

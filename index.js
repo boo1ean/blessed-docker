@@ -16,7 +16,7 @@ var screen = blessed.screen({
 screen.title = 'Blessed Docker';
 
 // Quit on Escape, q, or Control-C.
-screen.key(['escape', 'q', 'C-c'], function(ch, key) {
+screen.key(['q', 'C-c'], function(ch, key) {
   return process.exit(0);
 });
 
@@ -30,13 +30,9 @@ var subNavigationContainer = blessed.box({
 	parent: layout,
 	width: '100%',
 	height: 'shrink',
-	content: 'SUBTAV',
-	padding: {
-		left: 1,
-		right: 1
-	},
 	bottom: 2
 });
+
 
 var navigationContainer = blessed.box({
 	parent: layout,
@@ -68,32 +64,54 @@ var contentContainer = blessed.box({
 	}
 });
 
+var prompt = blessed.question({
+	parent: screen,
+	border: 'line',
+	height: 'shrink',
+	width: 'half',
+	top: 'center',
+	left: 'center',
+	label: ' {blue-fg}Confirmation{/blue-fg} ',
+	padding: 1,
+	tags: true,
+	keys: true,
+	vi: true
+});
+
 var menuCommands = {
 	'Containers': attachController(containersListController),
 	'Images': attachController(imagesListController)
 };
 
+var context = {
+	bus: bus,
+	askConfirmation: askConfirmation
+};
+
 // Setup initial ui (containers list view) 
-navigationController(bus, menuCommands).then(createAttachHook(navigationContainer));
-containersListController(bus).then(createAttachHook(contentContainer));
+navigationController(context, menuCommands).then(createAttachHook(navigationContainer));
+containersListController(context).spread(createAttachHook(contentContainer));
 
 bus.on('message', renderIntoInfoContainer);
 setupEventHandlers(docker, bus);
 
 function attachController (controller) {
 	return function attachElement () {
-		controller(bus).then(createAttachHook(contentContainer));
+		controller(context).spread(createAttachHook(contentContainer));
 	}
 }
 
 function createAttachHook (parent) {
-	return function attachElement (el) {
+	return function attachElement (el, subCommands) {
 		// Clean up container
 		parent.children.forEach(removeChild);
+		subNavigationContainer.children.forEach(removeChild);
 
 		// Append new element focus on it and render
 		parent.append(el);
 		el.focus();
+
+		subNavigationContainer.append(createSubnavElement(subCommands));
 		screen.render();
 	}
 
@@ -105,4 +123,27 @@ function createAttachHook (parent) {
 function renderIntoInfoContainer (message) {
 	infoContainer.setContent(message);
 	screen.render();
+}
+
+function createSubnavElement (commands) {
+	return blessed.listbar({
+		parent: layout,
+		width: 'shrink',
+		height: 'shrink',
+		scrollable: false,
+		style: {
+			item: { fg: 'green' },
+			selected: { fg: 'green' }
+		},
+		commands: commands
+	});
+}
+
+function askConfirmation (question) {
+	return new Promise (function (resolve) {
+		prompt.ask(question, function (err, result) {
+			resolve(result);
+			screen.render();
+		});
+	});
 }
