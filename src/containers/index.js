@@ -15,13 +15,16 @@ module.exports = function containersListController (context) {
 		};
 
 		var listView = createElement();
-
 		listView.setItems(containers.map(getContainerName));
 
 		return [listView, containersCommands];
 
 		function createEventTrigger (name) {
 			return function triggerEvent () {
+				if (!containers.length) {
+					return context.bus.emit('warn', 'No containers selected');
+				}
+
 				context.askConfirmation(name + '?').then(function actuallyTrigger (ok) {
 					if (ok) {
 						var containerIndex = listView.selected;

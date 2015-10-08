@@ -33,7 +33,6 @@ var subNavigationContainer = blessed.box({
 	bottom: 2
 });
 
-
 var navigationContainer = blessed.box({
 	parent: layout,
 	width: '100%',
@@ -56,7 +55,7 @@ var infoContainer = blessed.box({
 var contentContainer = blessed.box({
 	parent: layout,
 	width: '100%',
-	height: 'shrink',
+	height: '100%-6',
 	border: 'line',
 	padding: {
 		left: 1,
@@ -92,8 +91,16 @@ var context = {
 navigationController(context, menuCommands).then(createAttachHook(navigationContainer));
 containersListController(context).spread(createAttachHook(contentContainer));
 
-bus.on('message', renderIntoInfoContainer);
+bus.on('info', renderInfo);
+bus.on('warn', renderWarning);
+bus.on('err', renderError);
+
 setupEventHandlers(docker, bus);
+
+// Refetch containers list
+bus.on('containers updated', function syncList () {
+	containersListController(context).spread(createAttachHook(contentContainer));
+});
 
 function attachController (controller) {
 	return function attachElement () {
@@ -120,7 +127,20 @@ function createAttachHook (parent) {
 	}
 }
 
-function renderIntoInfoContainer (message) {
+function renderInfo (message) {
+	infoContainer.style.bg = '#00875f';
+	infoContainer.setContent(message);
+	screen.render();
+}
+
+function renderWarning (message) {
+	infoContainer.style.bg = '#d78700';
+	infoContainer.setContent(message);
+	screen.render();
+}
+
+function renderError (message) {
+	infoContainer.style.bg = '#d75f00';
 	infoContainer.setContent(message);
 	screen.render();
 }
