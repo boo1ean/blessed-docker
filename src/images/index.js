@@ -13,6 +13,6 @@ module.exports = function containersListController () {
 
 		listView.setItems(images);
 
-		return [listView];
+		return [listView, {}];
 	}
 };

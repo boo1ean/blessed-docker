@@ -9,9 +9,8 @@ module.exports = function containersListController (context) {
 	function initializeListView (containers) {
 		var containersCommands = {
 			'kill': { keys: ['d'], callback: createEventTrigger('kill container') },
-			'stop': { keys: ['s'], callback: createEventTrigger('stop container') },
 			'restart': { keys: ['r'], callback: createEventTrigger('restart container') },
-			'full commands list': { keys: ['?'], callback: createEventTrigger('additional commands') }
+			//'full commands list': { keys: ['?'], callback: createEventTrigger('additional commands') }
 		};
 
 		var listView = createElement();

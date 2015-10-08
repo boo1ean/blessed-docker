@@ -26,11 +26,16 @@ var layout = blessed.box({
 	height: '100%'
 });
 
-var subNavigationContainer = blessed.box({
+var subNavigation =  blessed.listbar({
 	parent: layout,
 	width: '100%',
 	height: 'shrink',
-	bottom: 2
+	bottom: 2,
+	scrollable: false,
+	style: {
+		item: { fg: 'green' },
+		selected: { fg: 'green' }
+	}
 });
 
 var navigationContainer = blessed.box({
@@ -48,8 +53,7 @@ var infoContainer = blessed.box({
 	padding: {
 		left: 1,
 		right: 1
-	},
-	content: 'infa4'
+	}
 });
 
 var contentContainer = blessed.box({
@@ -112,13 +116,14 @@ function createAttachHook (parent) {
 	return function attachElement (el, subCommands) {
 		// Clean up container
 		parent.children.forEach(removeChild);
-		subNavigationContainer.children.forEach(removeChild);
 
 		// Append new element focus on it and render
 		parent.append(el);
 		el.focus();
 
-		subNavigationContainer.append(createSubnavElement(subCommands));
+		// If not sub commands was returned then use empty object to do not crash
+		subCommands = subCommands || {};
+		subNavigation.setItems(subCommands);
 		screen.render();
 	}
 

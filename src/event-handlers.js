@@ -1,19 +1,24 @@
 var fmt = require('util').format;
 
 module.exports = function setupEventHandlers (docker, bus) {
-	bus.on('kill container', killContainer);
+	bus.on('kill container', performContainerAction('kill'));
+	bus.on('restart container', performContainerAction('restart'));
 
-	function killContainer (container) {
-		var containerId = container.Id;
-		var container = docker.getContainer(container.Id);
+	// Container actions factory function.
+	// Returns function which performs specified action on container
+	function performContainerAction (action) {
+		return function performAction (container) {
+			var containerId = container.Id;
+			var container = docker.getContainer(container.Id);
 
-		container.kill(function emitInfoMessage (err) {
-			if (err) {
-				return bus.emit('err', err.json);
-			}
+			container[action](function emitContainerActionResultEvents (err) {
+				if (err) {
+					bus.emit('err', err.json);
+				}
 
-			bus.emit('containers updated');
-			bus.emit('info', fmt('Killed container %s ', containerId));
-		});
+				bus.emit('containers updated');
+				bus.emit('info', fmt('%sed container %s ', action, containerId));
+			});
+		}
 	}
 };
